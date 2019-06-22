@@ -1,9 +1,7 @@
 const ObjectId = require('mongodb').ObjectID;
 
 const getProjectMiddleware = async(req, res, next) => {
-    console.log(req);
     const id = req.params.projectId;
-    console.log(id);
     const db = require('./../components/mongodb').db;
     const project = await db.collection('projects').findOne({
         _id: new ObjectId(id)

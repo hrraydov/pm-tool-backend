@@ -11,7 +11,7 @@ const getTaskMiddleware = async(req, res, next) => {
             error: 'Task Not Found'
         });
     }
-    if (task.project.toString() !== id) {
+    if (task.project.toString() !== req.project._id.toString()) {
         return res.status(400).json({
             error: 'Task not part of this project'
         });
