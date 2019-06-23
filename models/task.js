@@ -5,8 +5,8 @@ const fields = {
     description: {
         hide: false
     },
-    order: {
-        hide: true
+    status: {
+        hide: false
     }
 };
 

@@ -3,10 +3,10 @@ var jwt = require('jsonwebtoken');
 const auth = async(req, res, next) => {
     const authorizationHeader = req.headers.authorization;
     if (!authorizationHeader) {
-        return res.json({ error: 'missing authorization header' });
+        return res.status(401).json({ error: 'missing authorization header' });
     }
     if (!authorizationHeader.startsWith('Bearer ')) {
-        return res.json({
+        return res.status(401).json({
             error: 'Invalid Authorization header'
         });
     }

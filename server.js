@@ -8,6 +8,7 @@ mongodb.connect();
 
 app.use(bodyParser.json());
 
+app.use('/auth', require('./routes/auth'));
 app.use('/users', require('./routes/user'));
 app.use('/projects', require('./routes/project'));
 app.use('/projects/:projectId/tasks', require('./routes/task'));
