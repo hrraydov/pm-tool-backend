@@ -4,6 +4,7 @@ const task = require('./../models/task');
 const ObjectId = require('mongodb').ObjectID;
 const getTaskMiddleware = require('./../components/get-task-middleware');
 const getResourceMiddleware = require('./../components/get-resource-middleware');
+const getBudgetMiddleware = require('./../components/get-budget-middleware');
 const router = express.Router({ mergeParams: true });
 
 router.use(require('./../components/auth-middleware'));
@@ -120,6 +121,67 @@ router.delete('/:taskId/resources/:resourceId', getTaskMiddleware, getResourceMi
     });
     await db.collection('resources').updateOne({
         _id: resource._id
+    }, {
+        $pull: {
+            tasks: task._id
+        }
+    });
+    return res.json({});
+});
+
+
+router.get('/:taskId/budgets', getTaskMiddleware, async(req, res) => {
+    const skip = req.query.offset || 0;
+    const take = req.query.size || 20;
+    const search = req.query.search || '';
+    const db = require('./../components/mongodb').db;
+    console.log(req.task.budgets);
+    const result = await db.collection('budgets').find({
+        project: req.project._id,
+        _id: {
+            $in: req.task.budgets
+        }
+    }, {
+        skip,
+        take
+    }).toArray();
+    return res.json(result.map(doc => helper.modelToBody(doc, task.fields)));
+});
+
+router.post('/:taskId/budgets/:budgetId/link', getTaskMiddleware, getBudgetMiddleware, async(req, res) => {
+    const task = req.task;
+    const budget = req.budget;
+    const db = require('./../components/mongodb').db;
+    await db.collection('tasks').updateOne({
+        _id: task._id
+    }, {
+        $push: {
+            budgets: budget._id
+        }
+    });
+    await db.collection('budgets').updateOne({
+        _id: budget._id
+    }, {
+        $push: {
+            tasks: task._id
+        }
+    });
+    return res.json({});
+});
+
+router.delete('/:taskId/budgets/:budgetId', getTaskMiddleware, getBudgetMiddleware, async(req, res) => {
+    const task = req.task;
+    const budget = req.budget;
+    const db = require('./../components/mongodb').db;
+    await db.collection('tasks').updateOne({
+        _id: task._id
+    }, {
+        $pull: {
+            budgets: budget._id
+        }
+    });
+    await db.collection('budgets').updateOne({
+        _id: budget._id
     }, {
         $pull: {
             tasks: task._id

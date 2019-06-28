@@ -13,6 +13,7 @@ app.use('/users', require('./routes/user'));
 app.use('/projects', require('./routes/project'));
 app.use('/projects/:projectId/tasks', require('./routes/task'));
 app.use('/projects/:projectId/resources', require('./routes/resource'));
+app.use('/projects/:projectId/budgets', require('./routes/budget'));
 app.get('/health', (req, res) => {
     res.json({
         status: 'ok'

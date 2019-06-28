@@ -1,10 +1,10 @@
 const express = require('express');
 const helper = require('./../models/helper');
-const resource = require('./../models/resource');
+const budget = require('./../models/budget');
 const ObjectId = require('mongodb').ObjectID;
-const getResourceMiddleware = require('./../components/get-resource-middleware');
-const getTaskMiddleware = require('./../components/get-task-middleware');
 const getBudgetMiddleware = require('./../components/get-budget-middleware');
+const getTaskMiddleware = require('./../components/get-task-middleware');
+const getResourceMiddleware = require('./../components/get-resource-middleware');
 const router = express.Router({ mergeParams: true });
 
 router.use(require('./../components/auth-middleware'));
@@ -16,39 +16,39 @@ router.get('/', async(req, res) => {
     const skip = req.query.offset || 0;
     const take = req.query.size || 20;
     const search = req.query.search || '';
-    const result = await db.collection('resources').find({
+    const result = await db.collection('budgets').find({
         project: req.project._id
     }, {
         skip,
         take
     }).toArray();
-    return res.json(result.map(doc => helper.modelToBody(doc, resource.fields)));
+    return res.json(result.map(doc => helper.modelToBody(doc, budget.fields)));
 });
 
 router.post('/', async(req, res) => {
     const db = require('./../components/mongodb').db;
-    let model = helper.bodyToModel(req.body, resource.fields);
-    const result = await db.collection('resources').insertOne({
+    let model = helper.bodyToModel(req.body, budget.fields);
+    const result = await db.collection('budgets').insertOne({
         ...model,
         createdOn: new Date(),
         createdBy: req.logged._id,
         project: req.project._id,
     });
-    model = await db.collection('resources').findOne({
+    model = await db.collection('budgets').findOne({
         _id: new ObjectId(result.insertedId)
     });
-    return res.status(201).location(`/projects/${req.project._id}/resources/${model._id}`).json(helper.modelToBody(model, resource.fields));
+    return res.status(201).location(`/projects/${req.project._id}/budgets/${model._id}`).json(helper.modelToBody(model, budget.fields));
 });
 
-router.get('/:resourceId', getResourceMiddleware, (req, res) => {
-    return res.json(helper.modelToBody(req.resource, resource.fields));
+router.get('/:budgetId', getBudgetMiddleware, (req, res) => {
+    return res.json(helper.modelToBody(req.budget, budget.fields));
 });
 
-router.put('/:resourceId', getResourceMiddleware, async(req, res) => {
+router.put('/:budgetId', getBudgetMiddleware, async(req, res) => {
     const db = require('./../components/mongodb').db;
-    let model = helper.bodyToModel(req.body, resource.fields);
-    const result = await db.collection('resources').updateOne({
-        _id: req.resource._id
+    let model = helper.bodyToModel(req.body, budget.fields);
+    const result = await db.collection('budgets').updateOne({
+        _id: req.budget._id
     }, {
         $set: {
             ...model,
@@ -56,22 +56,21 @@ router.put('/:resourceId', getResourceMiddleware, async(req, res) => {
             modifiedBy: req.logged._id
         }
     });
-    model = await db.collection('resources').findOne({
-        _id: req.resource._id
+    model = await db.collection('budgets').findOne({
+        _id: req.budget._id
     });
-    return res.status(200).json(helper.modelToBody(model, resource.fields));
+    return res.status(200).json(helper.modelToBody(model, budget.fields));
 });
 
-router.delete('/:resourceId', getResourceMiddleware, async(req, res) => {
+router.delete('/:budgetId', getBudgetMiddleware, async(req, res) => {
     const db = require('./../components/mongodb').db;
-    await db.collection('resources').deleteOne({
-        _id: req.resource._id
+    await db.collection('budgets').deleteOne({
+        _id: req.budget._id
     });
-    return res.json(helper.modelToBody(req.resource, resource.fields));
+    return res.json(helper.modelToBody(req.budget, budget.fields));
 });
 
-
-router.get('/:resourceId/tasks', getResourceMiddleware, async(req, res) => {
+router.get('/:budgetId/tasks', getBudgetMiddleware, async(req, res) => {
     const skip = req.query.offset || 0;
     const take = req.query.size || 20;
     const search = req.query.search || '';
@@ -79,75 +78,76 @@ router.get('/:resourceId/tasks', getResourceMiddleware, async(req, res) => {
     const result = await db.collection('tasks').find({
         project: req.project._id,
         _id: {
-            $in: req.resource.tasks
+            $in: req.budget.tasks
         }
     }, {
         skip,
         take
     }).toArray();
-    return res.json(result.map(doc => helper.modelToBody(doc, resource.fields)));
+    return res.json(result.map(doc => helper.modelToBody(doc, budget.fields)));
 });
 
-router.post('/:resourceId/tasks/:taskId/link', getTaskMiddleware, getResourceMiddleware, async(req, res) => {
+router.post('/:budgetId/tasks/:taskId/link', getBudgetMiddleware, getTaskMiddleware, async(req, res) => {
+    const budget = req.budget;
     const task = req.task;
-    const resource = req.resource;
     const db = require('./../components/mongodb').db;
-    await db.collection('tasks').updateOne({
-        _id: task._id
-    }, {
-        $push: {
-            resources: resource._id
-        }
-    });
-    await db.collection('resources').updateOne({
-        _id: resource._id
+    await db.collection('budgets').updateOne({
+        _id: budget._id
     }, {
         $push: {
             tasks: task._id
         }
     });
-    return res.json({});
-});
-
-router.delete('/:resourceId/tasks/:taskId', getTaskMiddleware, getResourceMiddleware, async(req, res) => {
-    const task = req.task;
-    const resource = req.resource;
-    const db = require('./../components/mongodb').db;
     await db.collection('tasks').updateOne({
         _id: task._id
     }, {
-        $pull: {
-            resources: resource._id
+        $push: {
+            budgets: budget._id
         }
     });
-    await db.collection('resources').updateOne({
-        _id: resource._id
+    return res.json({});
+});
+
+router.delete('/:budgetId/tasks/:taskId', getBudgetMiddleware, getTaskMiddleware, async(req, res) => {
+    const budget = req.budget;
+    const task = req.task;
+    const db = require('./../components/mongodb').db;
+    await db.collection('budgets').updateOne({
+        _id: budget._id
     }, {
         $pull: {
             tasks: task._id
         }
     });
+    await db.collection('tasks').updateOne({
+        _id: task._id
+    }, {
+        $pull: {
+            budgets: budget._id
+        }
+    });
     return res.json({});
 });
 
-router.get('/:resourceId/budgets', getResourceMiddleware, async(req, res) => {
+router.get('/:budgetId/resources', getBudgetMiddleware, async(req, res) => {
     const skip = req.query.offset || 0;
     const take = req.query.size || 20;
     const search = req.query.search || '';
     const db = require('./../components/mongodb').db;
-    const result = await db.collection('budgets').find({
+    console.log(req.budget.resources);
+    const result = await db.collection('resources').find({
         project: req.project._id,
         _id: {
-            $in: req.resource.budgets
+            $in: req.budget.resources
         }
     }, {
         skip,
         take
     }).toArray();
-    return res.json(result.map(doc => helper.modelToBody(doc, resource.fields)));
+    return res.json(result.map(doc => helper.modelToBody(doc, budget.fields)));
 });
 
-router.post('/:resourceId/budgets/:budgetId/link', getBudgetMiddleware, getResourceMiddleware, async(req, res) => {
+router.post('/:budgetId/resources/:resourceId/link', getBudgetMiddleware, getResourceMiddleware, async(req, res) => {
     const budget = req.budget;
     const resource = req.resource;
     const db = require('./../components/mongodb').db;
@@ -162,13 +162,13 @@ router.post('/:resourceId/budgets/:budgetId/link', getBudgetMiddleware, getResou
         _id: resource._id
     }, {
         $push: {
-            tasks: budget._id
+            budgets: budget._id
         }
     });
     return res.json({});
 });
 
-router.delete('/:resourceId/budgets/:budgetId', getBudgetMiddleware, getResourceMiddleware, async(req, res) => {
+router.delete('/:budgetId/resources/:resourceId', getBudgetMiddleware, getResourceMiddleware, async(req, res) => {
     const budget = req.budget;
     const resource = req.resource;
     const db = require('./../components/mongodb').db;
@@ -183,10 +183,11 @@ router.delete('/:resourceId/budgets/:budgetId', getBudgetMiddleware, getResource
         _id: resource._id
     }, {
         $pull: {
-            tasks: budget._id
+            budgets: budget._id
         }
     });
     return res.json({});
 });
 
 module.exports = router;
+
