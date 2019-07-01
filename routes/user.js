@@ -4,6 +4,7 @@ const user = require('./../models/user');
 const md5 = require('md5');
 const ObjectId = require('mongodb').ObjectID;
 const getUserMiddleware = require('./../components/get-user-middleware');
+const authMiddleware = require('../components/auth-middleware');
 
 const router = express.Router();
 
@@ -22,11 +23,15 @@ router.post('/', async(req, res) => {
     return res.status(201).location(`/users/${model._id}`).json(helper.modelToBody(model, user.fields));
 });
 
-router.get('/:userId/account', getUserMiddleware, (req, res) => {
+router.get('/account', authMiddleware, (req, res) => {
+    return res.json(helper.modelToBody(req.logged, user.fields));
+});
+
+router.get('/:userId', getUserMiddleware, (req, res) => {
     return res.json(helper.modelToBody(req.user, user.fields));
 });
 
-router.put('/:userId/account', getUserMiddleware, async(req, res) => {
+router.put('/:userId', getUserMiddleware, async(req, res) => {
     const db = require('./../components/mongodb').db;
     let model = helper.bodyToModel(req.body, user.fields);
     const result = await db.collection('users').updateOne({
