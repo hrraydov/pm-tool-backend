@@ -4,6 +4,15 @@ const fields = {
     },
     password: {
         hide: true
+    },
+    firstName: {
+        hide: false
+    },
+    lastName: {
+        hide: false
+    },
+    description: {
+        hide: false
     }
 };
 
