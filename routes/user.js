@@ -38,7 +38,9 @@ router.put('/:userId', getUserMiddleware, async(req, res) => {
         _id: req.user._id
     }, {
         $set: {
-            ...model,
+            firstName: model.firstName,
+            lastName: model.lastName,
+            description: model.description,
             modifiedOn: new Date(),
         }
     });
