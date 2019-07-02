@@ -75,15 +75,18 @@ router.get('/:taskId/resources', getTaskMiddleware, async(req, res) => {
     const search = req.query.search || '';
     const db = require('./../components/mongodb').db;
     console.log(req.task.resources);
-    const result = await db.collection('resources').find({
-        project: req.project._id,
-        _id: {
-            $in: req.task.resources
-        }
-    }, {
-        skip,
-        take
-    }).toArray();
+    let result = [];
+    if (req.task.resources) {
+        result = await db.collection('resources').find({
+            project: req.project._id,
+            _id: {
+                $in: req.task.resources
+            }
+        }, {
+            skip,
+            take
+        }).toArray();
+    }
     return res.json(result.map(doc => helper.modelToBody(doc, task.fields)));
 });
 

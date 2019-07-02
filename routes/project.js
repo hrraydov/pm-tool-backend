@@ -57,7 +57,6 @@ router.put('/:projectId', getProjectMiddleware, async(req, res) => {
             modifiedBy: req.logged._id
         }
     });
-    console.dir(result);
     model = await db.collection('projects').findOne({
         _id: req.project._id
     });
